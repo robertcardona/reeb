@@ -49,7 +49,7 @@ class Interval:
             left_boundary = CLOSED;
         else:
             left_value = left_value - 1;
-            left_boundary = CLOSED;
+            left_boundary = OPEN;
 
         return Interval(left_boundary, left_value, self.right, self.right_boundary);
 
@@ -73,7 +73,7 @@ class Interval:
             left_boundary = CLOSED;
         else:
             left_value = left_value - 1;
-            left_boundary = CLOSED;
+            left_boundary = OPEN;
 
         right_boundary = self.right_boundary;
         right_value = self.right;
@@ -460,6 +460,7 @@ class ReebGraph:
 
     # interval assumed to be interval object
     def full(self, interval):
+        # DEBUG = True;
         # preprocesses inputs
         subgraph = self.get_subgraph(interval);
 
@@ -489,7 +490,7 @@ class ReebGraph:
 
             connected_subgraphs[component].append(node_time);
 
-            if DEBUG: print("Node:({}, {}) is in component {}".format(node_time, node_label, g.vertex(component)));
+            # if DEBUG: print("Node:({}, {}) is in component {}".format(node_time, node_label, g.vertex(component)));
 
         # donw with graph-tool object
 
@@ -502,6 +503,7 @@ class ReebGraph:
                 full_counter += 1;
 
         # print(full_counter);
+        # DEBUG = False
         return full_counter;
 
     def multiplicity(self, interval):
@@ -611,20 +613,20 @@ print("runtime : " + str(time_end - time_start) + " seconds")
 # rg to test full function calculations
 
 
-nodes = [
-    Node(1, 0),
-    Node(2, 0),
-    Node(3, 0),
-    Node(4, 0)
-    ];
-edges = [
-    Edge(Node(1, 0), Node(3, 0)),
-    Edge(Node(2, 0), Node(3, 0)),
-    Edge(Node(2, 0), Node(4, 0))
-]
-rg = ReebGraph(nodes, edges);
-rg.barcode()
-print()
+# nodes = [
+#     Node(1, 0),
+#     Node(2, 0),
+#     Node(3, 0),
+#     Node(4, 0)
+#     ];
+# edges = [
+#     Edge(Node(1, 0), Node(3, 0)),
+#     Edge(Node(2, 0), Node(3, 0)),
+#     Edge(Node(2, 0), Node(4, 0))
+# ]
+# rg = ReebGraph(nodes, edges);
+# rg.barcode()
+# print()
 
 time_start = tm.time();
 
@@ -648,45 +650,49 @@ time_start = tm.time();
 #     Edge(Node(4, 0), Node(6, 0)),
 #     Edge(Node(4, 0), Node(7, 0))
 # ];
-
+# rg = ReebGraph(nodes, edges);
+# rg.barcode()
+# print()
 
 # Justin's example
-nodes = [
-    Node(0, 0),
-    Node(1, 0),
-    Node(2, 0),
-    Node(3, 0),
-    Node(4, 0),
-    Node(5, 0)
-    ];
-edges = [
-    Edge(Node(0, 0), Node(3, 0)),
-    Edge(Node(1, 0), Node(4, 0)),
-    Edge(Node(2, 0), Node(3, 0)),
-    Edge(Node(3, 0), Node(4, 0)),
-    Edge(Node(4, 0), Node(5, 0))
-];
-rg = ReebGraph(nodes, edges);
-rg.barcode()
-print()
+# nodes = [
+#     Node(0, 0),
+#     Node(1, 0),
+#     Node(2, 0),
+#     Node(3, 0),
+#     Node(4, 0),
+#     Node(5, 0)
+#     ];
+# edges = [
+#     Edge(Node(0, 0), Node(3, 0)),
+#     Edge(Node(1, 0), Node(4, 0)),
+#     Edge(Node(2, 0), Node(3, 0)),
+#     Edge(Node(3, 0), Node(4, 0)),
+#     Edge(Node(4, 0), Node(5, 0))
+# ];
+# rg = ReebGraph(nodes, edges);
+# rg.barcode()
+# print()
 
 
-nodes = [
-    Node(0, 0),
-    Node(1, 0),
-    Node(2, 0),
-    Node(3, 0),
-    Node(4, 0),
-    Node(5, 0)
-    ];
-edges = [
-    Edge(Node(0, 0), Node(4, 0)),
-    Edge(Node(1, 0), Node(3, 0)),
-    Edge(Node(2, 0), Node(3, 0)),
-    Edge(Node(3, 0), Node(4, 0)),
-    Edge(Node(4, 0), Node(5, 0))
-];
-rg = ReebGraph(nodes, edges);
+# nodes = [
+#     Node(0, 0),
+#     Node(1, 0),
+#     Node(2, 0),
+#     Node(3, 0),
+#     Node(4, 0),
+#     Node(5, 0)
+#     ];
+# edges = [
+#     Edge(Node(0, 0), Node(4, 0)),
+#     Edge(Node(1, 0), Node(3, 0)),
+#     Edge(Node(2, 0), Node(3, 0)),
+#     Edge(Node(3, 0), Node(4, 0)),
+#     Edge(Node(4, 0), Node(5, 0))
+# ];
+# rg = ReebGraph(nodes, edges);
+# rg.barcode()
+# print()
 # rg.reeb_graph.generate_pdf("ReebGraph" + str(tm.time()));
 # rg.partition.generate_pdf("Partition" + str(tm.time()));
 # rg.split.generate_pdf("Split" + str(tm.time()));
@@ -701,7 +707,48 @@ rg = ReebGraph(nodes, edges);
 # rg.partition.generate_pdf("Partition" + str(tm.time()));
 # rg.split.generate_pdf("Split" + str(tm.time()));
 # print(rg.full(Interval(OPEN, 2, 4, OPEN)))
+
+# nodes = [
+#     Node(0, 0),
+#     Node(1, 0),
+#     Node(2, 0),
+#     Node(3, 0),
+#     Node(4, 0),
+#     Node(5, 0)
+#     ];
+# edges = [
+#     Edge(Node(0, 0), Node(1, 0)),
+#     Edge(Node(1, 0), Node(2, 0)),
+#     Edge(Node(1, 0), Node(3, 0)),
+#     Edge(Node(2, 0), Node(3, 0)),
+#     Edge(Node(2, 0), Node(4, 0)),
+#     Edge(Node(3, 0), Node(4, 0)),
+#     Edge(Node(4, 0), Node(5, 0))
+# ];
+# rg = ReebGraph(nodes, edges);
+# rg.barcode()
+# print()
+
+# Justin's (email) Example #2
+nodes = [
+    Node(0, 0),
+    Node(1, 0),
+    Node(2, 0),
+    Node(3, 0),
+    Node(4, 0),
+    Node(5, 0)
+    ];
+edges = [
+    Edge(Node(0, 0), Node(2, 0)),
+    Edge(Node(1, 0), Node(3, 0)),
+    Edge(Node(2, 0), Node(3, 0)),
+    Edge(Node(1, 0), Node(4, 0)),
+    Edge(Node(2, 0), Node(4, 0)),
+    Edge(Node(4, 0), Node(5, 0))
+];
+rg = ReebGraph(nodes, edges);
 rg.barcode()
+print()
 
 time_end = tm.time();
 print("runtime : " + str(time_end - time_start) + " seconds")
