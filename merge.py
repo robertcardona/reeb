@@ -27,15 +27,17 @@ class Merge:
 
         # initialize internal strands
         self.strands = {}
+        self.strand_indices = []
         for index, time in strands.items():
             self.strands[index] = Rm(time)
+            self.strand_indices.append(index)
 
         # initialize sets
         for time in self.critical_times:
-            print(time)
+            # print(time)
             self.set[time] = downset_dict(self.strands, time)
-            for element in self.set[time]:
-                print("--{}".format(element))
+            # for element in self.set[time]:
+            #     print("--{}".format(element))
 
         # # initialize sets
         # for index, time in strands.items():
@@ -94,21 +96,22 @@ m = 2
 strands = {
     0 : [0, 0],
     1 : [0, 0],
-    2 : [2, 2]
+    2 : [1, 1]
 }
 
 # generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
 merge_points = {
-    (0, 1, 2) : [[0, 1], [1, 0]]
+    (0, 1) : [[0, 1], [1, 0]],
+    (0, 1, 2) : [[2, 2]]
 }
 
 merge = Merge(m, strands, merge_points)
 poset = merge.get_structure_poset()
-for pair in poset:
-    print("{} <= {}".format(pair[0], pair[1]))
+# for pair in poset:
+#     print("{} <= {}".format(pair[0], pair[1]))
     # print(pair[0])
     # print(pair[1])
-# print(merge)
+print(merge)
 
 exit()
 
@@ -146,6 +149,19 @@ class MergePresentation:
 
             self.critical_times.add(Rm(time))
 
+    def is_minimal(self):
+
+        return False
+
+    def get_critical_times(self):
+        return self.critical_times;
+
+    def get_critical_times_i(self, i):
+        # assert(1 <= i and i <= self.dimension)
+        critical_times_i = set()
+        for element in self.critical_times:
+            critical_times_i.add(element.get_component(i))
+        return critical_times_i
 
     def __str__(self):
         pres_str = "M : {};\n".format(self.get_simplicial_complex().simplices())
@@ -244,6 +260,31 @@ class MergePresentation:
         """
         return self.count_connected_components() == 1
 
+def get_possible_interleaving_values(M, N):
+    assert(M.dimension == N.dimension)
+
+    m = M.dimension
+
+    cm = []
+    cn = []
+
+    for i in range(1, m + 1):
+        cm.append(M.get_critical_times_i(i))
+        cn.append(N.get_critical_times_i(i))
+
+    possible_distances = set()
+    for i in range(0, m):
+        # TODO : rewrite this to use `combinations`
+        for x in cm[i]:
+            for y in cn[i]:
+                possible_distances.add(abs(x - y))
+        for x, y in combinations(cm[i], 2):
+            possible_distances.add(0.5 * abs(x - y))
+        for x, y in combinations(cn[i], 2):
+            possible_distances.add(0.5 * abs(x - y))
+
+    return possible_distances
+
 m = 1
 # Rm = lambda c : R(m, c)
 # print(Rm([0]))
@@ -256,31 +297,65 @@ generators = {
 
 # generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
 relations = {
-    (0, 1) : [4],
-    (1, 2) : [5]
+    (0, 1) : [3],
+    (1, 2) : [4]
 }
 
-# m = 2
+PM = MergePresentation(m, generators, relations)
+
+generators = {0 : [2]}
+relations = {}
+
+PN = MergePresentation(m, generators, relations)
+
+d = get_possible_interleaving_values(PM, PN)
+# print(d)
+#
+# exit()
+
+m = 2
+
 # generators = strands
 # relations = merge_points
-# generators = {
-#     0 : [0, 0],
-#     1 : [1, 1],
-#     2 : [2, 2]
-# }
-#
-# # generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
-# relations = {
-#     (0, 1) : [4, 4],
-#     (1, 2) : [5, 5]
-# }
+generators = {
+    0 : [0, 0],
+    1 : [1, 1],
+    2 : [2, 2]
+}
 
-presentation = MergePresentation(m, generators, relations)
-print(presentation)
+# generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
+relations = {
+    (0, 1) : [4, 4],
+    (1, 2) : [5, 5]
+}
+presentationA = MergePresentation(m, generators, relations)
+
+
+# generators = strands
+# relations = merge_points
+generators = {
+    0 : [0, 1],
+    1 : [1, 2],
+    2 : [2, 3]
+}
+
+# generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
+relations = {
+    (0, 1) : [4, 7],
+    (1, 2) : [5, 6]
+}
+
+presentationB = MergePresentation(m, generators, relations)
+# print(presentation)
 # print(presentation.count_connected_components())
 # print(presentation.is_connected())
-g = presentation.get_graph()
-presentation.get_filtration()
+# g = presentation.get_graph()
+# presentation.get_filtration()
+# critical_times_i = presentation.get_critical_times_i(2)
+# print(critical_times_i)
+
+d = get_possible_interleaving_values(presentationA, presentationB)
+print(d)
 
 # filename = "test.pdf";
 # graph_tool.draw.graph_draw(g, vertex_text=g.vp.label, output=filename);

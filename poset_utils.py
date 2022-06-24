@@ -11,6 +11,10 @@ class R():
         # return hash(tuple(self.coordinate))
         return hash(tuple(self.coordinate))
 
+    def get_component(self, i):
+        assert(1 <= i and i <= self.dimension)
+        return self.coordinate[i - 1]
+
     def __str__(self):
         components = []
         for i in range(0, self.dimension):
