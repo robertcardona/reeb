@@ -15,6 +15,11 @@ class R():
         assert(1 <= i and i <= self.dimension)
         return self.coordinate[i - 1]
 
+    def shift(self, epsilon):
+        m = self.dimension
+        e = R(m,  m * [epsilon])
+        return self + e
+
     def __str__(self):
         components = []
         for i in range(0, self.dimension):
@@ -23,6 +28,14 @@ class R():
             # if i < self.dimension - 1:
             #     text += ","
         return "R({})".format(", ".join(components))
+
+    def __add__(self, other):
+        assert(self.dimension == other.dimension)
+        m = self.dimension
+        coordinate = self.coordinate.copy()
+        for i in range(m):
+            coordinate[i] += other.coordinate[i]
+        return R(m, coordinate)
 
     def __lt__(self, other):
         less_than = True
@@ -68,22 +81,49 @@ assert(z >= y)
 assert(x <= x)
 assert(not x < x)
 assert(not x > x)
+# print(z >= y)
 
-def downset(collection, basetime):
-    down = set()
-    for element in collection:
-        if element <= basetime:
-            down.add(element)
-    return down
+assert(x + z == R(2, [3, 3]))
 
-def downset_dict(d, basetime):
-    down = set()
-    for key, time in d.items():
+assert(x.shift(1) == z)
+
+# def downset(collection, basetime):
+#     down = []
+#     for element in collection:
+#         if element <= basetime:
+#             down.append(element)
+#     return down
+
+def downset(times, basetime):
+    down = []
+    for i in range(len(times)):
+    # for key, time in d.items():
         # print(time)
         # print(basetime)
+        time = times[i]
         if time <= basetime:
-            down.add(key)
+            down.append(i)
     return down
+
+def upset_times(times, basetime):
+    up = []
+    for i in range(len(times)):
+        time = times[i]
+        # print(time)
+        # print(basetime)
+        # print("time-{}".format(time))
+        # print("basetime-{}".format(basetime))
+        if time >= basetime:
+            # print("--added-time")
+            up.append(time)
+    return up
+
+# def upset_dict(d, basetime):
+#     up = []
+#     for key, time in d.items():
+#         if time >= basetime:
+#             up.append(time)
+#     return up
 
 # m = 2
 # Rm = lambda c : R(m, c)

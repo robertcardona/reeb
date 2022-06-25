@@ -7,6 +7,43 @@ from graph_tool.all import *
 
 DEBUG = False;
 
+class UnionFind:
+
+    def __init__(self, s):
+        self.set = s
+        self.parent = {}
+        for i in s:
+            self.parent[i] = i
+
+    def find(self, k):
+        if self.parent[k] == k:
+            return k
+        return self.find(self.parent[k])
+
+    def unite(self, a, b):
+        x = self.find(a)
+        y = self.find(b)
+        self.parent[x] = y
+
+    def equivalent(self, a, b):
+        return self.find(a) == self.find(b)
+
+    def __str__(self):
+        r = range(len(self.set))
+        s = self.set
+        return str([[s[j] for j in r if self.equivalent(s[j], s[i])] for i in r if s[i] == self.parent[s[i]]])
+        # return str([self.find(i) for i in self.set])
+
+s = [0, 2, 3, 4, 9, 10]
+print(s)
+u = UnionFind(s)
+u.unite(0, 9)
+print(u)
+u.unite(9, 10)
+print(u)
+print(u.equivalent(0, 10))
+# exit()
+
 class Merge:
 
     def __init__(self, m, strands, merge_points):
@@ -15,7 +52,9 @@ class Merge:
         self.dimension = m
         Rm = lambda c : R(m, c)
 
-        self.set = {}
+        self.m_set = {} # M(t) : t in C_M.
+        # each set has an dictionary as value : the strand indices and
+        # the
 
         # generate critical times set
         self.critical_times = set()
@@ -26,47 +65,94 @@ class Merge:
                 self.critical_times.add(Rm(time))
 
         # initialize internal strands
-        self.strands = {}
-        self.strand_indices = []
+        # TODO : make strands a set with the times.
+        # self.strands = {}
+        # self.strand_indices = []
+        self.strand_times = []
+        self.strand_ids = {}
         for index, time in strands.items():
-            self.strands[index] = Rm(time)
-            self.strand_indices.append(index)
+            # self.strands[index] = Rm(time)
+            # self.strand_indices.append(index)
+            self.strand_times.append(Rm(time))
+            self.strand_ids[index] = len(self.strand_times) - 1
 
         # initialize sets
         for time in self.critical_times:
             # print(time)
-            self.set[time] = downset_dict(self.strands, time)
+            # TODO : maybe modify so elements are indices not id's.
+            self.m_set[time] = UnionFind(downset(self.strand_times, time))
             # for element in self.set[time]:
             #     print("--{}".format(element))
 
-        # # initialize sets
-        # for index, time in strands.items():
-        #     if Rm(time) not in self.set:
-        #         self.set[Rm(time)] = []
-        #     self.set[Rm(time)].append(index)
-        #
-        #     # self.strands[index] = Rm(time)
-        # # self.strands = []
-        # for key, value in self.set.items():
-        #     print("{} - {}".format(key, value))
-        #
-        # # self.merge_points = {}
-        # for indices, times in merge_points.items():
-        #     # for index in indices:
-        #     #     print(index)
-        #     r_times = []
-        #     for time in times:
-        #         # print(time)
-        #         r_times.append(Rm(time))
-        #         self.critical_times.add(Rm(time))
-        #     # self.merge_points[indices] = r_times
+        # merge sets
+        for key, times in merge_points.items():
+            # print("key : {}".format(key))
+            # print("times : {}".format(times))
+            for time in times:
+                # print(time)
+                uptimes = upset_times(list(self.critical_times), Rm(time))
+                # print(uptimes)
+                for u_time in uptimes:
+                    # u_key = self.strand_times[u_index]
+                    # print("----Uptime : {}".format(u_time))
+                    # print(m_set)
+                    for i in range(0, len(key) - 1):
+                        current_id = self.strand_ids[key[i]]
+                        next_id = self.strand_ids[key[i + 1]]
+
+                        self.m_set[u_time].unite(current_id, next_id)
+                    # m_set = self.m_set[u_time]
+                    # print(m_set)
+                    #     print(i)
+                    # for component in key:
+                    #     print("------{}".format(self.strand_ids[component]))
+        for key, value in self.m_set.items():
+            # m_Set = self.m_set[key]
+            print("M({}) = {}".format(key, value))
+
+    # def merge(self):
+    #     # populate self.set
+    #     return None
+
+    def count_strands(self):
+        return len(self.strand_times)
+
+    def get_id_by_index(self, index):
+        for key, value in self.strand_ids.items():
+            if value == index:
+                return key
+        return None
+
+    def get_strand_by_index(self, index):
+        # key = self.strand_indices[index]
+        # birth_time = self.strands[key]
+        # return None
+        # key = self.strand_ids[index]
+        key = self.get_id_by_index(index)
+        birth_time = self.strand_times[index]
+        return "--{} : strands[{}] = {}".format(index, key, birth_time)
 
     def get_set(self, r):
         return None
 
-    def get_structure_map(self, s, t):
+    def are_equal(self, s, t, i, j):
+        """
+        Returns if M(s <= t)(g_i) == M(s <= t)(g_j)
+        """
+        assert(s <= t)
+        assert(i in self.m_set[s].set)
+        assert(j in self.m_set[s].set)
+        return self.m_set[t].equivalent(i, j)
+
+    def get_structure_map(self, s, t): # M(s) to M(t) inclusion
         assert(s <= t)
         return None
+
+    # def evaluate_structure_map(self, s, t, i):
+    #     assert(s <= t)
+    #     assert(i in self.m_set[s].set)
+    #     # print(self.m_set[t].equivalent(0, 1))
+    #     return None
 
     def get_structure_poset(self):
         poset = []
@@ -81,37 +167,54 @@ class Merge:
         return poset
 
     def __str__(self):
-        text = ""
+
+
+        # build critical times string
         components = []
         for time in self.critical_times:
-            # print(time)
             components.append(str(time))
-            # text += str(self.coordinate[i])
-            # if i < self.dimension - 1:
-            #     text += ","
+        critical_times = "C_M = [{}]".format(", ".join(components))
 
-        return "({})".format(", ".join(components))
+        text = critical_times
+        return text
 
 m = 2
+Rm = lambda c : R(m, c)
 strands = {
     0 : [0, 0],
     1 : [0, 0],
-    2 : [1, 1]
+    22 : [1, 1]
 }
 
 # generators = [0, 1, 2] # g_0 born at 0, g_1 born at 0, g_2 born at 0
 merge_points = {
     (0, 1) : [[0, 1], [1, 0]],
-    (0, 1, 2) : [[2, 2]]
+    (0, 1, 22) : [[2, 2]]
 }
 
 merge = Merge(m, strands, merge_points)
+strand_count = merge.count_strands()
+for i in range(strand_count):
+    print(merge.get_strand_by_index(i))
 poset = merge.get_structure_poset()
 # for pair in poset:
 #     print("{} <= {}".format(pair[0], pair[1]))
     # print(pair[0])
     # print(pair[1])
+# ev = merge.evaluate_structure_map(Rm([0, 0]), Rm([0, 1]), 0)
+# print(ev)
+print(merge.are_equal(Rm([0, 0]), Rm([0, 1]), 0, 1))
 print(merge)
+
+class MergeMorphism:
+
+    def __init__(self, M, N, phi):
+        self.source = M
+        self.target = N
+        self.morphism = phi
+
+    def is_valid(self):
+        return False
 
 exit()
 
