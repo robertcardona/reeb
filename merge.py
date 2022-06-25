@@ -15,6 +15,15 @@ class UnionFind:
         for i in s:
             self.parent[i] = i
 
+    def add(self, k):
+        self.set.append(k)
+        self.parent[k] = k
+
+    def contains(self, k):
+        if k in self.set:
+            return True
+        return False
+
     def find(self, k):
         if self.parent[k] == k:
             return k
@@ -34,15 +43,24 @@ class UnionFind:
         return str([[s[j] for j in r if self.equivalent(s[j], s[i])] for i in r if s[i] == self.parent[s[i]]])
         # return str([self.find(i) for i in self.set])
 
-s = [0, 2, 3, 4, 9, 10]
-print(s)
-u = UnionFind(s)
-u.unite(0, 9)
-print(u)
-u.unite(9, 10)
-print(u)
-print(u.equivalent(0, 10))
+# s = [0, 2, 3, 4, 9, 10]
+# print(s)
+# u = UnionFind(s)
+# u.unite(0, 9)
+# print(u)
+# u.unite(9, 10)
+# print(u)
+# print(u.equivalent(0, 10))
 # exit()
+
+class MergePoint():
+    def __init__(self, id_x, id_y, rm_time):
+        self.id_x = id_x
+        self.id_y = id_y
+        self.rm_time = rm_time
+
+    def __str__(self):
+        return "{},{} merge at {}".format(self.id_x, self.id_y, self.rm_time)
 
 class Merge:
 
@@ -53,8 +71,6 @@ class Merge:
         Rm = lambda c : R(m, c)
 
         self.m_set = {} # M(t) : t in C_M.
-        # each set has an dictionary as value : the strand indices and
-        # the
 
         # generate critical times set
         self.critical_times = set()
@@ -65,54 +81,118 @@ class Merge:
                 self.critical_times.add(Rm(time))
 
         # initialize internal strands
-        # TODO : make strands a set with the times.
-        # self.strands = {}
-        # self.strand_indices = []
         self.strand_times = []
         self.strand_ids = {}
-        for index, time in strands.items():
-            # self.strands[index] = Rm(time)
-            # self.strand_indices.append(index)
+        for key, time in strands.items():
+            index = len(self.strand_times)
             self.strand_times.append(Rm(time))
-            self.strand_ids[index] = len(self.strand_times) - 1
+            self.strand_ids[key] = index
 
         # initialize sets
         for time in self.critical_times:
-            # print(time)
-            # TODO : maybe modify so elements are indices not id's.
             self.m_set[time] = UnionFind(downset(self.strand_times, time))
-            # for element in self.set[time]:
-            #     print("--{}".format(element))
+
+        # initialize internal merge points tracker
+        self.merge_points = []
+        for key, times in merge_points.items():
+            for i in range(0, len(key) - 1):
+                id_x = self.strand_ids[key[i]]
+                id_y = self.strand_ids[key[i + 1]]
+                for time in times:
+                    m_point = MergePoint(id_x, id_y, Rm(time))
+                    self.merge_points.append(m_point)
+            # print("{} :: {}".format(key, times))
+            # print(time)
+        for m_point in self.merge_points:
+            print("--{}".format(m_point))
 
         # merge sets
         for key, times in merge_points.items():
-            # print("key : {}".format(key))
-            # print("times : {}".format(times))
             for time in times:
-                # print(time)
                 uptimes = upset_times(list(self.critical_times), Rm(time))
-                # print(uptimes)
                 for u_time in uptimes:
-                    # u_key = self.strand_times[u_index]
-                    # print("----Uptime : {}".format(u_time))
-                    # print(m_set)
                     for i in range(0, len(key) - 1):
                         current_id = self.strand_ids[key[i]]
                         next_id = self.strand_ids[key[i + 1]]
 
                         self.m_set[u_time].unite(current_id, next_id)
-                    # m_set = self.m_set[u_time]
-                    # print(m_set)
-                    #     print(i)
-                    # for component in key:
-                    #     print("------{}".format(self.strand_ids[component]))
-        for key, value in self.m_set.items():
-            # m_Set = self.m_set[key]
-            print("M({}) = {}".format(key, value))
 
-    # def merge(self):
-    #     # populate self.set
+    def add_critical_time(self, time):
+        self.critical_times.add(R(self.dimension, time))
+
+    def add_strand_time(self, time):
+        self.strand_times.append(R(self.dimension, time))
+
+    def add_strand(self, id, birth_time):
+        # check id is unique
+        assert(id not in self.strand_ids)
+        rm_time = R(self.dimension, birth_time)
+
+
+        # update internal strands
+        strand_index = len(self.strand_times)
+        self.strand_ids[id] = strand_index
+
+        self.add_strand_time(birth_time)
+        self.add_critical_time(birth_time)
+
+        # update m_sets[t] where t : upset(time)
+        if rm_time not in self.m_set:
+            self.add_m_set(birth_time)
+            # self.m_set[rm_time] = UnionFind(downset(self.strand_times, rm_time))
+
+        for time in self.critical_times:
+            if time > rm_time:
+                self.m_set[time].add(strand_index)
+
+        return strand_index
+
+    def add_m_set(self, time):
+        # update m_set[time] to have all strands alive at `time`
+        rm_time = R(self.dimension, time)
+        self.m_set[rm_time] = UnionFind(downset(self.strand_times, rm_time))
+
+        # merge points identified before `time`
+        for m_point in self.merge_points:
+            if m_point.rm_time <= rm_time:
+                self.m_set[rm_time].unite(m_point.id_x, m_point.id_y)
+
+
+    # def merge(self, merge_time):
+    #     # Merge everything at merge_time
+    #     for merge_point in self.merge_points:
+    #         print(merge_point)
+    #
     #     return None
+
+    def add_merge_point(self, key_x, key_y, merge_time):
+        # m = self.dimension
+        rm_time = R(self.dimension, merge_time)
+
+
+        id_x = self.strand_ids[key_x]
+        id_y = self.strand_ids[key_y]
+        # check both born <= merge_time
+        assert(self.strand_times[id_x] <= rm_time)
+        assert(self.strand_times[id_y] <= rm_time)
+
+        # add merge_time as critical time if doesn't exist
+        if rm_time not in self.m_set:
+            self.add_critical_time(merge_time)
+            # self.critical_times.add(R(m, merge_time))
+            self.add_m_set(merge_time)
+            # self.merge(merge_time)
+
+        # add merge point to internal tracker
+        m_point = MergePoint(id_x, id_y, rm_time)
+        self.merge_points.append(m_point)
+
+
+        uptimes = upset_times(list(self.critical_times), rm_time)
+        for u_time in uptimes:
+            self.m_set[u_time].unite(id_x, id_y)
+
+        return None
 
     def count_strands(self):
         return len(self.strand_times)
@@ -154,6 +234,11 @@ class Merge:
     #     # print(self.m_set[t].equivalent(0, 1))
     #     return None
 
+    def shift(self, epsilon):
+        epsilon = Rm(self.dimension * [epsilon])
+
+        return None
+
     def get_structure_poset(self):
         poset = []
         for pair in combinations(self.critical_times, 2):
@@ -167,16 +252,21 @@ class Merge:
         return poset
 
     def __str__(self):
-
+        components = []
+        for key, value in self.m_set.items():
+            components.append("M({}) = {}".format(key, value))
+        m_sets = "{}".format("\n".join(components))
+            # print()
 
         # build critical times string
         components = []
         for time in self.critical_times:
             components.append(str(time))
-        critical_times = "C_M = [{}]".format(", ".join(components))
+        critical_times = "C_M = [{}]".format(", ".join(components)) + "\n"
 
-        text = critical_times
+        text = critical_times + m_sets + "\n"
         return text
+
 
 m = 2
 Rm = lambda c : R(m, c)
@@ -192,29 +282,63 @@ merge_points = {
     (0, 1, 22) : [[2, 2]]
 }
 
-merge = Merge(m, strands, merge_points)
-strand_count = merge.count_strands()
-for i in range(strand_count):
-    print(merge.get_strand_by_index(i))
-poset = merge.get_structure_poset()
+# merge = Merge(m, strands, merge_points)
+# strand_count = merge.count_strands()
+# for i in range(strand_count):
+#     print(merge.get_strand_by_index(i))
+# poset = merge.get_structure_poset()
 # for pair in poset:
 #     print("{} <= {}".format(pair[0], pair[1]))
     # print(pair[0])
     # print(pair[1])
 # ev = merge.evaluate_structure_map(Rm([0, 0]), Rm([0, 1]), 0)
 # print(ev)
-print(merge.are_equal(Rm([0, 0]), Rm([0, 1]), 0, 1))
-print(merge)
+# print(merge.are_equal(Rm([0, 0]), Rm([0, 1]), 0, 1))
+# print(merge)
+
+m = 1
+Rm = lambda c : R(m, c)
+
+strands = {
+    0 : [0],
+    1 : [1],
+    2 : [2]
+}
+merge_points = {
+    (0, 1, 2) : [[3]]
+}
+M = Merge(m, strands, merge_points)
+# assert(M.count_strands() == 3)
+print(M)
+M.add_strand("3", [1.5])
+print(M)
+strand_count = M.count_strands()
+for i in range(strand_count):
+    print(M.get_strand_by_index(i))# M.add_merge_point
+M.add_merge_point(0, "3", [5])
+print(M)
+
+strands = {0 : [2]}
+merge_points = {}
+N = Merge(m, strands, merge_points)
+# assert(N.count_strands() == 1)
+print(N)
 
 class MergeMorphism:
 
     def __init__(self, M, N, phi):
+        assert(M.dimension == N.dimension)
+
         self.source = M
         self.target = N
         self.morphism = phi
 
     def is_valid(self):
         return False
+
+phi = MergeMorphism(M, N, [0, 0, 0])
+
+
 
 exit()
 
