@@ -7,6 +7,9 @@ class R():
         self.dimension = m
         self.coordinate = coordinate
 
+    def copy(self):
+        return R(self.dimension, self.coordinate.copy())
+
     def __hash__(self):
         # return hash(tuple(self.coordinate))
         return hash(tuple(self.coordinate))
@@ -15,9 +18,13 @@ class R():
         assert(1 <= i and i <= self.dimension)
         return self.coordinate[i - 1]
 
+    def to_list(self):
+        return self.coordinate
+
     def shift(self, epsilon):
         m = self.dimension
         e = R(m,  m * [epsilon])
+        # print(e)
         return self + e
 
     def __str__(self):
@@ -32,9 +39,9 @@ class R():
     def __add__(self, other):
         assert(self.dimension == other.dimension)
         m = self.dimension
-        coordinate = self.coordinate.copy()
+        coordinate = m * [0]
         for i in range(m):
-            coordinate[i] += other.coordinate[i]
+            coordinate[i] = self.coordinate[i] + other.coordinate[i]
         return R(m, coordinate)
 
     def __lt__(self, other):
@@ -49,11 +56,10 @@ class R():
         return less_than and exist_strict
 
     def __eq__(self, other):
-        equal = True
         for i in range(0, self.dimension):
             if self.coordinate[i] != other.coordinate[i]:
-                equal = False
-        return equal
+                return False
+        return True
 
     def __le__(self, other):
         return self < other or self == other
@@ -83,9 +89,18 @@ assert(not x < x)
 assert(not x > x)
 # print(z >= y)
 
-assert(x + z == R(2, [3, 3]))
-
 assert(x.shift(1) == z)
+assert(x + x == z)
+# print(x)
+# print(x.shift(1))
+# print(x.shift(1) == z)
+# print(x)
+# print(y)
+# print(x + y)
+
+# assert(x + z == R(2, [3, 3]))
+
+# assert(x.shift(1) == z)
 
 # def downset(collection, basetime):
 #     down = []
