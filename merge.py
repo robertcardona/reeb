@@ -108,12 +108,9 @@ class MergePoint():
 class Merge:
 
     def __init__(self, m, strands, merge_points):
-        # return None
         # if DEBUG : print("Merge : init")
         self.dimension = m
         Rm = lambda c : R(m, c)
-
-        self.m_set = {} # M(t) : t in C_M.
 
         # generate critical times set
         self.critical_times = set()
@@ -137,6 +134,7 @@ class Merge:
         #     print("strands[{}] = {}".format(id, strand))
 
         # initialize sets
+        self.m_set = {} # M(t) : t in C_M.
         for time in self.critical_times:
             down = downset_strands(self.strands, time)
             self.m_set[time] = UnionFind(down)
@@ -166,23 +164,7 @@ class Merge:
                 self.m_set[u_time].unite(m_point.id_x, m_point.id_y)
             # print("--{}".format(m_point))
 
-        # merge sets
-        # for key, times in merge_points.items():
-        #     for time in times:
-        #         uptimes = upset_times(list(self.critical_times), Rm(time))
-        #         for u_time in uptimes:
-        #             for i in range(0, len(key) - 1):
-        #                 current_id = self.strand_ids[key[i]]
-        #                 next_id = self.strand_ids[key[i + 1]]
-        #
-        #                 self.m_set[u_time].unite(current_id, next_id)
-
     def add_critical_time(self, rm_time):
-        # print(type(time) == R)
-        # if type(time) == R:
-        #     self.critical_times.add(time)
-        # else:
-        #     self.critical_times.add(R(self.dimension, time))
         self.critical_times.add(rm_time.copy())
 
     def add_strand(self, id, birth_time):
@@ -190,10 +172,9 @@ class Merge:
         assert(id not in self.strand_ids)
         rm_time = R(self.dimension, birth_time)
 
+        # update internal strands
         strand_index = len(self.strands)
         strand = Strand(strand_index, rm_time)
-
-        # update internal strands
         self.strands[id] = strand
 
         # update critical times
@@ -219,36 +200,22 @@ class Merge:
             if m_point.rm_time <= rm_time:
                 self.m_set[rm_time.copy()].unite(m_point.id_x, m_point.id_y)
 
-
-    # def merge(self, merge_time):
-    #     # Merge everything at merge_time
-    #     for merge_point in self.merge_points:
-    #         print(merge_point)
-    #
-    #     return None
-
     def add_merge_point(self, key_x, key_y, merge_time):
         # m = self.dimension
         rm_time = R(self.dimension, merge_time)
 
-
-        id_x = self.strand_ids[key_x]
-        id_y = self.strand_ids[key_y]
         # check both born <= merge_time
-        assert(self.strand_times[id_x] <= rm_time)
-        assert(self.strand_times[id_y] <= rm_time)
+        assert(self.strands[key_x].rm_time <= rm_time)
+        assert(self.strands[key_y].rm_time <= rm_time)
 
         # add merge_time as critical time if doesn't exist
         if rm_time not in self.m_set:
             self.add_critical_time(rm_time)
-            # self.critical_times.add(R(m, merge_time))
-            self.add_m_set(merge_time)
-            # self.merge(merge_time)
+            self.add_m_set(rm_time)
 
         # add merge point to internal tracker
         m_point = MergePoint(id_x, id_y, rm_time)
         self.merge_points.append(m_point)
-
 
         uptimes = upset_times(list(self.critical_times), rm_time)
         for u_time in uptimes:
@@ -289,16 +256,6 @@ class Merge:
         assert(i in self.m_set[s].set)
         assert(j in self.m_set[s].set)
         return self.m_set[s].equivalent(i, j)
-
-    def get_structure_map(self, s, t): # M(s) to M(t) inclusion
-        assert(s <= t)
-        return None
-
-    # def evaluate_structure_map(self, s, t, i):
-    #     assert(s <= t)
-    #     assert(i in self.m_set[s].set)
-    #     # print(self.m_set[t].equivalent(0, 1))
-    #     return None
 
     def shift(self, epsilon):
         # epsilon = Rm(self.dimension * [epsilon])
@@ -428,11 +385,6 @@ class MergeMorphism:
             if c_time not in N.critical_times:
                 N.add_critical_time(c_time)
                 N.add_m_set(c_time)
-                # print("c_time : {} not in N".format(c_time))
-
-        # for c_time in N.critical_times:
-        #     print(c_time)
-        # print(N.critical_times)
 
         self.source = M
         self.target = N
@@ -449,15 +401,9 @@ class MergeMorphism:
     def check_well_defined(self, time):
         for c in self.source.m_set[time].get_classes():
             for i in range(0, len(c) - 1):
-                x = self.morphism[c[i]]
-                y = self.morphism[c[i + 1]]
-                if not self.target.are_equal(time, x, y):
-                    # print(self.source.m_set[time].get_classes())
-                    # print(self.target.m_set[time].get_classes())
-                    # print("{} and {} are not equivalent in target({})"
-                    #     .format(x, y, time))
-                    # print("phi({}) != phi({})"
-                    #     .format(self.source.get_id(x), self.source.get_id(y)))
+                id_x = self.morphism[c[i]]
+                id_y = self.morphism[c[i + 1]]
+                if not self.target.are_equal(time, id_x, id_y):
                     return False
         return True
 
@@ -465,56 +411,15 @@ class MergeMorphism:
     def is_valid(self):
         # check strand not mapped to emptyset : b(phi(g)) <= b(g)
         if not self.check_strands_valid():
-            # print("check_strands_valid() = False")
             return False
-        # for index in range(self.source.count_strands()):
-        #     source_birth = self.source.strand_times[index]
-        #     target_birth = self.target.strand_times[self.morphism[index]]
-        #     if target_birth < source_birth:
-        #         return False
         for time in self.source.critical_times:
             if not self.check_well_defined(time):
-                # print("check_well_defined() = False")
                 return False
-
-            # id = self.source.get_id(index)
-            # print(id)
-            # print("{} <= {}".format(source_birth, target_birth))
-
-        # poset = self.source.get_structure_poset()
-        # # print(poset)
-        # for pair in poset:
-        #     s = pair[0]
-        #     t = pair[1]
-        #     print("{} <= {}".format(s, t))
-        #     for c in self.source.m_set[t].get_classes():
-        #         # check all equivalent elements map to same element
-        #         for i in range(0, len(c) - 1):
-        #             x = self.morphism[c[i]]
-        #             y = self.morphism[c[i + 1]]
-        #             if not self.target.are_equal(t, x, y):
-        #                 print("{} and {} are not equivalent in N({})"
-        #                     .format(x, y, t))
-        #                 return False
-        #         print(c)
-        #
-        #     for c in self.source.m_set[t].get_classes():
-        #         print(c)
-        #     # print(self.source.m_set[s].get_classes())
-        #     # print(self.source.m_set[t].get_classes())
-        #     for index in self.source.m_set[s].set:
-        #         id = self.source.get_id(index)
-        #         print(id)
-
-        # print("is_valid() = True")
         return True
 
     def __str__(self):
         components = []
         for id, strand in self.source.strands.items():
-        # for i in range(self.source.count_strands()):
-            # source = strand
-            # target = self.target.strands[self.morphism[id]]
             components.append("{} -> {}".format(id, self.morphism[id]))
         return "({} >>> {})".format(", ".join(components), self.is_valid())
 
