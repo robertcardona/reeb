@@ -72,7 +72,6 @@ def downset_strands(strands, rm_time):
     Given a dictionary of strands and `rm_time`, return a list of keys
     with strand[key].rm_time <= rm_time.
     """
-    # print("downset_strands({}, {})".format(strands.keys(), rm_time))
     down = []
     for id, strand in strands.items():
         time = strand.rm_time
@@ -103,7 +102,6 @@ class MergePoint():
 
     def __str__(self):
         return "Merge[{} and {} at {}]".format(self.id_x, self.id_y, self.rm_time)
-        # return "{},{} merge at {}".format(self.id_x, self.id_y, self.rm_time)
 
 class Merge:
 
@@ -123,15 +121,10 @@ class Merge:
         # initialize internal strands
         self.strands = {}
         for id, time in strands.items():
-
             # TODO : check if strands already contains id; throw error
             index = len(self.strands)
             strand = Strand(index, Rm(time))
             self.strands[id] = strand
-            # print(strand)
-
-        # for id, strand in self.strands.items():
-        #     print("strands[{}] = {}".format(id, strand))
 
         # initialize sets
         self.m_set = {} # M(t) : t in C_M.
@@ -142,27 +135,18 @@ class Merge:
         # initialize internal merge points tracker
         self.merge_points = []
         for key, times in merge_points.items():
-            # print(key)
             for i in range(0, len(key) - 1):
-                # id_x = self.strand_ids[key[i]]
-                # id_y = self.strand_ids[key[i + 1]]
                 id_x = key[i]
                 id_y = key[i + 1]
                 for time in times:
                     m_point = MergePoint(id_x, id_y, Rm(time))
                     self.merge_points.append(m_point)
-            # print("{} :: {}".format(key, times))
-            # print(time)
-
-        # for m_point in self.merge_points:
-        #     print(m_point)
 
         # merge sets
         for m_point in self.merge_points:
             uptimes = upset_times(list(self.critical_times), m_point.rm_time)
             for u_time in uptimes:
                 self.m_set[u_time].unite(m_point.id_x, m_point.id_y)
-            # print("--{}".format(m_point))
 
     def add_critical_time(self, rm_time):
         self.critical_times.add(rm_time.copy())
@@ -235,15 +219,6 @@ class Merge:
             if strand.index == index:
                 return id
         return None
-
-    # def get_strand_by_index(self, index):
-    #     # key = self.strand_indices[index]
-    #     # birth_time = self.strands[key]
-    #     # return None
-    #     # key = self.strand_ids[index]
-    #     key = self.get_id(index)
-    #     birth_time = self.strand_times[index]
-    #     return "--{} : strands[{}] = {}".format(index, key, birth_time)
 
     def get_set(self, r):
         return None
